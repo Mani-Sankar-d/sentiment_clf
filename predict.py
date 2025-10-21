@@ -6,25 +6,11 @@ from utils.checkpoint import load_ckpt
 
 import pandas as pd
  
-df = pd.read_csv("sentiment_data/train.csv")
+df = pd.read_csv("sentiment_data/test.csv")
 # print(df[df["sentiment"] == "negative"].shape)
 
 @torch.no_grad()
 def predict_sentiment(model, tokenizer, device, text, max_len=512):
-    """
-    Predict sentiment for a single text input.
-    
-    Args:
-        model: Trained sentiment model
-        tokenizer: BERT tokenizer
-        device: torch device
-        text: Input text string
-        max_len: Maximum sequence length
-    
-    Returns:
-        prediction: 0 (Negative) or 1 (Positive)
-        confidence: Softmax probability of predicted class
-    """
     model.eval()
     
     # Tokenize the input text
@@ -61,15 +47,8 @@ def main():
 
     # ---- Load best checkpoint ----
     print("Loading model checkpoint...")
-    model, optimizer, _, _, _ = load_ckpt(model=model, optimizer=optimizer, path="best_checkpoint.pth", device=device)
+    model, optimizer, _, _, _ = load_ckpt(model=model, optimizer=optimizer, path="sentiment_clf.pth", device=device)
     print(f"Model loaded successfully on {device}\n")
-
-    # ---- Interactive loop ----
-    print("=" * 60)
-    print("📝 Sentiment Analysis - Interactive Mode")
-    print("=" * 60)
-    print("Type your text and press Enter to get sentiment prediction.")
-    print("Type 'quit' or 'exit' to stop.\n")
     tp=0
     fp=0
     tn=0
@@ -79,15 +58,6 @@ def main():
         # Get user input
         user_input = df.loc[i,"review"]
         truth = df.loc[i,"sentiment"]
-        # Check for exit command
-        if user_input.lower() in ['quit', 'exit', 'q']:
-            print("👋 Goodbye!")
-            break
-        
-        # Skip empty input
-        if not user_input:
-            print("⚠️ Please enter some text.\n")
-            continue
         
         # Make prediction
         pred, confidence = predict_sentiment(model, tokenizer, device, user_input)
@@ -98,12 +68,6 @@ def main():
         elif(label == "positive" and truth=="negative"): fp+=1
         elif(label == "negative" and truth=="positive"): fn+=1
         elif(label == "negative" and truth=="negative"): tn+=1
-
-        # print(f"\n{'─' * 60}")
-        # print(f"📌 Input: {user_input}")
-        # print(f"➡️ Prediction: {label}")
-        # print(f"📊 Confidence: {confidence:.2%}")
-        # print(f"{'─' * 60}\n")
     if (tp+fp) > 0 and (tp+fn) > 0:
         p = tp/(tp+fp)
         r = tp/(tp+fn)
